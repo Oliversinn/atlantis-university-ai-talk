@@ -29,3 +29,14 @@ dev = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src/f1_ai --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+source = ["src/f1_ai"]
+omit = ["src/f1_ai/__init__.py", "src/f1_ai/viz/__init__.py", "src/f1_ai/data/__init__.py", "src/f1_ai/ai/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
