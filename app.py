@@ -27,7 +27,9 @@ from openai import OpenAI
 
 load_dotenv()
 
-fastf1.Cache.enable_cache("cache")
+CACHE_DIR = "cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+fastf1.Cache.enable_cache(CACHE_DIR)
 
 EXAMPLE_QUESTIONS = [
     "Who has the most Formula 1 World Championships?",
