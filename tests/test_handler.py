@@ -1,16 +1,15 @@
 """Tests for QuestionHandler — mocks all OpenAI calls."""
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 from src.f1_ai.ai.handler import QuestionHandler
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_openai_client(content: str) -> MagicMock:
     """Return an OpenAI client mock whose chat.completions.create returns *content*."""
@@ -28,6 +27,7 @@ def _make_openai_client(content: str) -> MagicMock:
 # ---------------------------------------------------------------------------
 # classify_question
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyQuestion:
     @pytest.mark.parametrize(
@@ -61,6 +61,7 @@ class TestClassifyQuestion:
 # answer_historical_question
 # ---------------------------------------------------------------------------
 
+
 class TestAnswerHistoricalQuestion:
     def test_returns_model_content(self) -> None:
         expected = "Michael Schumacher won 7 championships."
@@ -80,6 +81,7 @@ class TestAnswerHistoricalQuestion:
 # answer_regulations_question
 # ---------------------------------------------------------------------------
 
+
 class TestAnswerRegulationsQuestion:
     def test_returns_model_content(self) -> None:
         expected = "DRS reduces drag on straights."
@@ -98,6 +100,7 @@ class TestAnswerRegulationsQuestion:
 # ---------------------------------------------------------------------------
 # extract_race_params
 # ---------------------------------------------------------------------------
+
 
 class TestExtractRaceParams:
     def test_parses_full_json_response(self) -> None:

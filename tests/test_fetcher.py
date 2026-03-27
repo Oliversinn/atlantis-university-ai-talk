@@ -1,6 +1,5 @@
 """Tests for F1DataFetcher — mocks FastF1 and Ergast API calls."""
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -21,6 +20,7 @@ def fetcher() -> F1DataFetcher:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_mock_session(laps_df: pd.DataFrame, results_df: pd.DataFrame) -> MagicMock:
     """Build a minimal FastF1 session mock."""
     session = MagicMock()
@@ -33,10 +33,10 @@ def _make_mock_session(laps_df: pd.DataFrame, results_df: pd.DataFrame) -> Magic
 # get_lap_times
 # ---------------------------------------------------------------------------
 
+
 class TestGetLapTimes:
     def test_returns_dataframe(self, fetcher: F1DataFetcher) -> None:
         """get_lap_times should return a DataFrame with LapTimeSeconds column."""
-        import datetime
 
         laps_data = pd.DataFrame(
             {
@@ -104,6 +104,7 @@ class TestGetLapTimes:
 # get_race_results
 # ---------------------------------------------------------------------------
 
+
 class TestGetRaceResults:
     def test_returns_top_10(self, fetcher: F1DataFetcher) -> None:
         """get_race_results should return at most 10 rows."""
@@ -150,10 +151,9 @@ class TestGetRaceResults:
 # get_season_standings
 # ---------------------------------------------------------------------------
 
+
 class TestGetSeasonStandings:
-    def test_returns_correct_rows(
-        self, fetcher: F1DataFetcher, ergast_response: dict
-    ) -> None:
+    def test_returns_correct_rows(self, fetcher: F1DataFetcher, ergast_response: dict) -> None:
         """get_season_standings should parse the Ergast JSON into a DataFrame."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = ergast_response
@@ -171,9 +171,7 @@ class TestGetSeasonStandings:
     def test_returns_empty_df_for_empty_standings(self, fetcher: F1DataFetcher) -> None:
         """get_season_standings should return an empty DataFrame when no standings data."""
         mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            "MRData": {"StandingsTable": {"StandingsLists": []}}
-        }
+        mock_resp.json.return_value = {"MRData": {"StandingsTable": {"StandingsLists": []}}}
         mock_resp.raise_for_status = MagicMock()
 
         with patch("src.f1_ai.data.fetcher.requests.get", return_value=mock_resp):

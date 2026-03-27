@@ -1,12 +1,13 @@
 """F1DataFetcher — wraps all FastF1 and Ergast API calls."""
 
 import os
+from typing import Any, cast
 
 import fastf1
 import pandas as pd
 import requests
 
-from src.f1_ai.config import CACHE_DIR, CURRENT_YEAR
+from src.f1_ai.config import CACHE_DIR
 
 # Enable FastF1 cache once when this module is first imported.
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -24,9 +25,10 @@ class F1DataFetcher:
         """
         session = fastf1.get_session(year, event, session_type)
         session.load(telemetry=False, weather=False, messages=False)
-        laps = session.laps[
-            ["Driver", "LapNumber", "LapTime", "Sector1Time", "Sector2Time", "Sector3Time"]
-        ].copy()
+        laps = cast(
+            pd.DataFrame,
+            session.laps[["Driver", "LapNumber", "LapTime", "Sector1Time", "Sector2Time", "Sector3Time"]].copy(),
+        )
         laps = laps.dropna(subset=["LapTime"])
         laps["LapTimeSeconds"] = laps["LapTime"].dt.total_seconds()
         return laps
@@ -39,9 +41,10 @@ class F1DataFetcher:
         """
         session = fastf1.get_session(year, event, "R")
         session.load(telemetry=False, weather=False, messages=False)
-        results = session.results[
-            ["DriverNumber", "BroadcastName", "TeamName", "Position", "Points", "Time"]
-        ].copy()
+        results = cast(
+            pd.DataFrame,
+            session.results[["DriverNumber", "BroadcastName", "TeamName", "Position", "Points", "Time"]].copy(),
+        )
         return results.head(10)
 
     def get_season_standings(self, year: int) -> pd.DataFrame:
@@ -52,11 +55,14 @@ class F1DataFetcher:
         url = f"https://ergast.com/api/f1/{year}/driverStandings.json"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        data = response.json()
-        standings_list = data["MRData"]["StandingsTable"]["StandingsLists"]
+        data = cast(dict[str, Any], response.json())
+        standings_list = cast(
+            list[dict[str, Any]],
+            data["MRData"]["StandingsTable"]["StandingsLists"],
+        )
         if not standings_list:
             return pd.DataFrame()
-        standings = standings_list[0]["DriverStandings"]
+        standings = cast(list[dict[str, Any]], standings_list[0]["DriverStandings"])
         rows = [
             {
                 "Position": int(s["position"]),
