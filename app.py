@@ -1,57 +1,28 @@
-"""Formula 1 AI Assistant - First Draft
+"""Formula 1 AI Assistant
 
 A Streamlit app that lets users ask natural language questions about Formula 1.
 Supports historical questions, regulation queries, and live race data via FastF1.
-
-First draft written in a junior developer style — logic lives mostly in top-level
-functions inside a single file. Subsequent PRs will refactor this into classes,
-add tests, and introduce proper linting/type checking.
 """
 
-import json
 import os
-from datetime import datetime
 
-import fastf1
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import requests
 import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from src.f1_ai.ai.handler import QuestionHandler
+from src.f1_ai.config import CURRENT_YEAR, EXAMPLE_QUESTIONS
+from src.f1_ai.data.fetcher import F1DataFetcher
+from src.f1_ai.viz.charts import ChartBuilder
+
 # ---------------------------------------------------------------------------
-# Configuration
+# Bootstrap
 # ---------------------------------------------------------------------------
 
 load_dotenv()
 
-CACHE_DIR = "cache"
-os.makedirs(CACHE_DIR, exist_ok=True)
-fastf1.Cache.enable_cache(CACHE_DIR)
 
-EXAMPLE_QUESTIONS = [
-    "Who has the most Formula 1 World Championships?",
-    "What is DRS and how does it work?",
-    "Show me the lap times from the 2023 Monaco Grand Prix",
-    "Who won the most races in 2023?",
-    "What are the 2024 F1 technical regulations about the cost cap?",
-    "Show me the race results for the 2023 British Grand Prix",
-    "Which team scored the most points in 2023?",
-    "Who holds the record for most pole positions?",
-    "Explain the tire compound strategy used in modern F1",
-    "Show me the 2023 driver championship standings",
-]
-
-CURRENT_YEAR = datetime.now().year
-
-
-# ---------------------------------------------------------------------------
-# OpenAI helpers
-# ---------------------------------------------------------------------------
-
-def get_openai_client():
+def get_openai_client() -> OpenAI | None:
     """Create and return an OpenAI client using the API key from the environment."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -59,239 +30,18 @@ def get_openai_client():
     return OpenAI(api_key=api_key)
 
 
-def classify_question(client, question):
-    """Classify a question into: historical, regulations, or race_data.
-
-    Returns one of the three string labels. Falls back to 'historical'
-    if the model returns an unexpected value.
-    """
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a Formula 1 expert. Classify the user's question into exactly "
-                    "one of three categories:\n"
-                    "- historical: questions about F1 history, records, championships, drivers, teams\n"
-                    "- regulations: questions about F1 rules, technical regulations, sporting code, "
-                    "car specifications, DRS, ERS, budget caps\n"
-                    "- race_data: questions that require specific race data such as lap times, "
-                    "race results, sector times, or season standings for a particular year or event\n\n"
-                    "Respond with ONLY the category name: historical, regulations, or race_data"
-                ),
-            },
-            {"role": "user", "content": question},
-        ],
-        max_tokens=20,
-    )
-    category = response.choices[0].message.content.strip().lower()
-    if category not in ("historical", "regulations", "race_data"):
-        return "historical"
-    return category
-
-
-def answer_historical_question(client, question):
-    """Use OpenAI to answer a historical F1 question."""
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a Formula 1 history expert with comprehensive knowledge of F1 "
-                    "from 1950 to the present. Answer questions about F1 history, drivers, "
-                    "constructors, circuits, records, and championships. Be concise but "
-                    "informative. Use bullet points or bold text to highlight key facts."
-                ),
-            },
-            {"role": "user", "content": question},
-        ],
-        max_tokens=600,
-    )
-    return response.choices[0].message.content
-
-
-def answer_regulations_question(client, question):
-    """Use OpenAI to answer an F1 regulations question."""
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a Formula 1 technical and sporting regulations expert with "
-                    "knowledge up to 2024. Answer questions about F1 rules, technical "
-                    "regulations, sporting code, DRS, ERS, budget caps, and car specifications. "
-                    "Be clear and precise. Use headings or bullet points where appropriate."
-                ),
-            },
-            {"role": "user", "content": question},
-        ],
-        max_tokens=600,
-    )
-    return response.choices[0].message.content
-
-
-def extract_race_params(client, question):
-    """Extract race parameters (year, event, session_type) from a natural-language question.
-
-    Returns a dict with keys:
-        year (int), event (str), session_type (str)
-    """
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Extract Formula 1 race information from the question. "
-                    "Return a JSON object with these keys:\n"
-                    "  - year: integer year of the race (default to the previous calendar year if not mentioned)\n"
-                    "  - event: string event name like 'Monaco', 'British', 'Italian', 'Bahrain'\n"
-                    "  - session_type: string, one of 'R' (Race), 'Q' (Qualifying), "
-                    "'FP1', 'FP2', 'FP3' (default to 'R')\n\n"
-                    "Return ONLY valid JSON, no other text."
-                ),
-            },
-            {"role": "user", "content": question},
-        ],
-        max_tokens=150,
-        response_format={"type": "json_object"},
-    )
-    params = json.loads(response.choices[0].message.content)
-    # Provide sensible defaults
-    params.setdefault("year", CURRENT_YEAR - 1)
-    params.setdefault("event", "Monaco")
-    params.setdefault("session_type", "R")
-    return params
-
-
 # ---------------------------------------------------------------------------
-# FastF1 data fetchers
+# Race-data question handler (uses all three classes)
 # ---------------------------------------------------------------------------
 
-def get_lap_times(year, event, session_type="R"):
-    """Fetch lap times for a session using FastF1.
-
-    Returns a DataFrame with columns: Driver, LapNumber, LapTimeSeconds,
-    Sector1Time, Sector2Time, Sector3Time.
-    """
-    session = fastf1.get_session(year, event, session_type)
-    session.load(telemetry=False, weather=False, messages=False)
-    laps = session.laps[
-        ["Driver", "LapNumber", "LapTime", "Sector1Time", "Sector2Time", "Sector3Time"]
-    ].copy()
-    laps = laps.dropna(subset=["LapTime"])
-    laps["LapTimeSeconds"] = laps["LapTime"].dt.total_seconds()
-    return laps
-
-
-def get_race_results(year, event):
-    """Fetch race results for a session using FastF1.
-
-    Returns the top-10 finishers with columns:
-    DriverNumber, BroadcastName, TeamName, Position, Points, Time.
-    """
-    session = fastf1.get_session(year, event, "R")
-    session.load(telemetry=False, weather=False, messages=False)
-    results = session.results[
-        ["DriverNumber", "BroadcastName", "TeamName", "Position", "Points", "Time"]
-    ].copy()
-    return results.head(10)
-
-
-def get_season_standings(year):
-    """Fetch season driver standings from the Ergast API.
-
-    Returns a DataFrame with columns: Position, Driver, Team, Points, Wins.
-    """
-    url = f"https://ergast.com/api/f1/{year}/driverStandings.json"
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()
-    data = response.json()
-    standings_list = data["MRData"]["StandingsTable"]["StandingsLists"]
-    if not standings_list:
-        return pd.DataFrame()
-    standings = standings_list[0]["DriverStandings"]
-    rows = [
-        {
-            "Position": int(s["position"]),
-            "Driver": f"{s['Driver']['givenName']} {s['Driver']['familyName']}",
-            "Team": s["Constructors"][0]["name"],
-            "Points": float(s["points"]),
-            "Wins": int(s["wins"]),
-        }
-        for s in standings
-    ]
-    return pd.DataFrame(rows)
-
-
-# ---------------------------------------------------------------------------
-# Visualization builders
-# ---------------------------------------------------------------------------
-
-def plot_lap_times(laps_df, title="Lap Times"):
-    """Build a Plotly line chart of lap times per driver.
-
-    Limits to the 10 drivers with the lowest median lap time.
-    """
-    top_drivers = (
-        laps_df.groupby("Driver")["LapTimeSeconds"]
-        .median()
-        .nsmallest(10)
-        .index.tolist()
-    )
-    filtered = laps_df[laps_df["Driver"].isin(top_drivers)]
-    fig = px.line(
-        filtered,
-        x="LapNumber",
-        y="LapTimeSeconds",
-        color="Driver",
-        title=title,
-        labels={"LapTimeSeconds": "Lap Time (s)", "LapNumber": "Lap"},
-        template="plotly_dark",
-    )
-    return fig
-
-
-def plot_race_results(results_df, title="Race Results"):
-    """Build a Plotly horizontal bar chart of points scored per driver."""
-    fig = px.bar(
-        results_df.sort_values("Points", ascending=True),
-        x="Points",
-        y="BroadcastName",
-        orientation="h",
-        color="TeamName",
-        title=title,
-        labels={"BroadcastName": "Driver", "Points": "Points Scored"},
-        template="plotly_dark",
-    )
-    return fig
-
-
-def plot_season_standings(standings_df, year):
-    """Build a Plotly bar chart of the season driver standings."""
-    fig = px.bar(
-        standings_df.head(10),
-        x="Driver",
-        y="Points",
-        color="Team",
-        title=f"{year} Driver Championship Standings",
-        labels={"Driver": "Driver", "Points": "Championship Points"},
-        template="plotly_dark",
-    )
-    fig.update_xaxes(tickangle=30)
-    return fig
-
-
-# ---------------------------------------------------------------------------
-# Question handlers
-# ---------------------------------------------------------------------------
-
-def handle_race_data_question(client, question):
+def handle_race_data_question(
+    handler: QuestionHandler,
+    fetcher: F1DataFetcher,
+    charts: ChartBuilder,
+    question: str,
+) -> None:
     """Route a race_data question to the right data fetch and visualisation."""
-    params = extract_race_params(client, question)
+    params = handler.extract_race_params(question)
     year = int(params.get("year", CURRENT_YEAR - 1))
     event = params.get("event", "Monaco")
     session_type = params.get("session_type", "R")
@@ -302,8 +52,8 @@ def handle_race_data_question(client, question):
 
     # --- lap times / sector analysis ---
     if any(w in question_lower for w in ("lap time", "fastest lap", "sector", "pace")):
-        laps = get_lap_times(year, event, session_type)
-        fig = plot_lap_times(laps, f"Lap Times – {year} {event} Grand Prix")
+        laps = fetcher.get_lap_times(year, event, session_type)
+        fig = charts.plot_lap_times(laps, f"Lap Times – {year} {event} Grand Prix")
         st.plotly_chart(fig, use_container_width=True)
 
         fastest = (
@@ -321,18 +71,18 @@ def handle_race_data_question(client, question):
 
     # --- season standings ---
     elif any(w in question_lower for w in ("standing", "championship", "season points")):
-        standings = get_season_standings(year)
+        standings = fetcher.get_season_standings(year)
         if standings.empty:
             st.warning(f"No standings data found for {year}.")
         else:
-            fig = plot_season_standings(standings, year)
+            fig = charts.plot_season_standings(standings, year)
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(standings, use_container_width=True)
 
     # --- race results (default for race_data) ---
     else:
-        results = get_race_results(year, event)
-        fig = plot_race_results(results, f"Race Results – {year} {event} Grand Prix")
+        results = fetcher.get_race_results(year, event)
+        fig = charts.plot_race_results(results, f"Race Results – {year} {event} Grand Prix")
         st.plotly_chart(fig, use_container_width=True)
         st.dataframe(results, use_container_width=True)
 
@@ -341,7 +91,7 @@ def handle_race_data_question(client, question):
 # Main Streamlit app
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> None:
     st.set_page_config(
         page_title="F1 AI Assistant 🏎️",
         page_icon="🏎️",
@@ -379,6 +129,11 @@ def main():
             st.code("OPENAI_API_KEY=sk-...", language="bash")
         return
 
+    # Instantiate the helpers
+    handler = QuestionHandler(openai_client)
+    fetcher = F1DataFetcher()
+    charts = ChartBuilder()
+
     # --- Question input ---
     col_input, col_btn = st.columns([5, 1])
     with col_input:
@@ -401,7 +156,7 @@ def main():
 
         with st.spinner("🧠 Analyzing your question…"):
             try:
-                category = classify_question(openai_client, user_question)
+                category = handler.classify_question(user_question)
             except Exception as exc:
                 st.error(f"Could not classify question: {exc}")
                 return
@@ -410,7 +165,7 @@ def main():
             st.subheader("📚 F1 History")
             with st.spinner("Looking up F1 history…"):
                 try:
-                    answer = answer_historical_question(openai_client, user_question)
+                    answer = handler.answer_historical_question(user_question)
                     st.markdown(answer)
                 except Exception as exc:
                     st.error(f"Error fetching answer: {exc}")
@@ -419,7 +174,7 @@ def main():
             st.subheader("📋 F1 Regulations")
             with st.spinner("Checking F1 regulations…"):
                 try:
-                    answer = answer_regulations_question(openai_client, user_question)
+                    answer = handler.answer_regulations_question(user_question)
                     st.markdown(answer)
                 except Exception as exc:
                     st.error(f"Error fetching answer: {exc}")
@@ -427,7 +182,7 @@ def main():
         elif category == "race_data":
             st.subheader("📊 Race Data")
             try:
-                handle_race_data_question(openai_client, user_question)
+                handle_race_data_question(handler, fetcher, charts, user_question)
             except Exception as exc:
                 st.error(f"Could not fetch race data: {exc}")
                 st.info(
