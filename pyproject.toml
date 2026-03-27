@@ -40,3 +40,9 @@ omit = ["src/f1_ai/__init__.py", "src/f1_ai/viz/__init__.py", "src/f1_ai/data/__
 
 [tool.coverage.report]
 show_missing = true
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)"
+]
