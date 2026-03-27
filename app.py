@@ -362,7 +362,8 @@ def main():
         st.divider()
         for question in EXAMPLE_QUESTIONS:
             if st.button(question, key=f"example_{hash(question)}", use_container_width=True):
-                st.session_state["current_question"] = question
+                st.session_state["question_input"] = question
+                st.session_state["auto_submit"] = True
 
     # --- API key gate ---
     openai_client = get_openai_client()
@@ -383,7 +384,6 @@ def main():
     with col_input:
         user_question = st.text_input(
             "Ask a question about Formula 1:",
-            value=st.session_state.get("current_question", ""),
             placeholder="e.g., Who has the most Formula 1 championships?",
             key="question_input",
             label_visibility="collapsed",
@@ -395,8 +395,8 @@ def main():
         st.warning("Please enter or select a question first!")
         return
 
-    if ask_button and user_question:
-        st.session_state["current_question"] = user_question
+    auto_submit = st.session_state.pop("auto_submit", False)
+    if (ask_button or auto_submit) and user_question:
         st.divider()
 
         with st.spinner("🧠 Analyzing your question…"):
