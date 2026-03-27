@@ -1,0 +1,211 @@
+---
+title: "AI in Real Workflows"
+subtitle: "From Prompting to Agents"
+author: "Oliver Mazariegos"
+format:
+  revealjs:
+    theme: dark
+    slide-number: true
+    transition: fade
+    center: true
+---
+
+## 👋 Before vs After AI
+
+::: {.columns}
+::: {.column width="50%"}
+### ❌ Before
+- Manual coding
+- Debugging alone
+- Slow data exploration
+- Repetitive tasks
+:::
+
+::: {.column width="50%"}
+### ✅ After
+- AI-assisted coding
+- Faster debugging
+- Rapid prototyping
+- Automation mindset
+:::
+:::
+
+---
+
+## 🚀 The Shift
+
+> I don’t code alone anymore.
+
+### I orchestrate AI.
+
+---
+
+## 🧠 How I Use AI
+
+::: {.columns}
+::: {.column width="33%"}
+### 💻 Coding Agent
+- [Github Copilot](https://education.github.com/pack)
+- PR automation
+- Test generation
+:::
+
+::: {.column width="33%"}
+### 📊 Data Work
+- SQL/NoSQL generation
+- Data cleaning
+- Analysis
+:::
+
+::: {.column width="33%"}
+### 🤖 AI Agents
+- Natural language queries
+- Retrieval + LLM
+- Production systems
+:::
+:::
+
+---
+
+## 💻 AI as a Coding Agent
+
+- Write functions
+- Refactor code
+- Generate tests
+- Debug errors
+
+> Think: delegate, not write
+
+---
+
+## ⚡ Live Demo Idea
+
+### Take messy code → improve it
+
+- Refactor
+- Add tests
+- Explain logic
+
+---
+
+## 📊 AI for Data Work
+
+- Prompt → SQL
+- Prompt → Python
+- Prompt → Insights
+
+---
+
+## 🧬 Real Example
+
+> "Find patterns in clinical/genomic data"
+
+- Clean data
+- Query data
+- Explain results
+
+---
+
+## 🤖 AI Agents (Simple View)
+
+User Question → Search → Context → LLM → Answer
+
+---
+
+## 🔥 Why This Matters
+
+- Works across industries
+- Scales your productivity
+- Reduces repetitive work
+
+---
+
+## 🧪 Hands-On Exercise
+
+### Build Your AI Assistant
+
+---
+
+## 🧩 The Problem
+
+> You have messy data / task
+
+Your goal:
+- Extract insights
+- Automate something
+
+---
+
+## 🛠 Prompt Framework
+
+1. Role
+2. Task
+3. Context
+4. Constraints
+5. Output format
+
+---
+
+## ❌ Bad Prompt
+
+> Analyze this data
+
+---
+
+## ✅ Good Prompt
+
+> You are a data analyst. Analyze this dataset and return 3 key insights in bullet points. Focus on trends and anomalies.
+
+---
+
+## 🧪 Your Turn
+
+- Pick a task from your field
+- Use the framework
+- Improve your prompt
+
+---
+
+## 🧠 Think Like This
+
+> How do I delegate this to AI?
+
+---
+
+## ⚙️ Optional Challenge
+
+### Build a Mini Agent
+
+- Ask questions
+- Refine answers
+- Chain prompts
+
+---
+
+## 💬 Discussion
+
+- How would you use this at work?
+- What can you automate?
+
+---
+
+## 🧰 Your AI Toolkit
+
+- ChatGPT
+- [Github Copilot](https://education.github.com/pack)
+- Prompt frameworks
+- Agents mindset
+
+---
+
+## 🚀 Final Thought
+
+> AI won’t replace you.
+
+> But people using AI will.
+
+---
+
+## 🙌 Thank You
+
+Questions?
