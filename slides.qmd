@@ -78,7 +78,7 @@ format:
 
 ---
 
-## ⚡ Live Demo Idea
+## ⚡ Live Demo
 
 ### Take messy code → improve it
 
@@ -88,7 +88,8 @@ format:
 
 ---
 
-## 📊 AI for Data Work
+## ⚡ Live Demo
+### 📊 AI for Data Work
 
 - Prompt → SQL
 - Prompt → Python
@@ -96,13 +97,13 @@ format:
 
 ---
 
-## 🧬 Real Example
+## ⚡ Live Demo
+### 🧬 Real Example
 
-> "Find patterns in clinical/genomic data"
+> "I need a F1 specialist ([from zero to functional project](https://github.com/Oliversinn/atlantis-university-ai-talk))"
 
-- Clean data
-- Query data
-- Explain results
+> "I need to improve my code ([from existing code to better code]())"
+
 
 ---
 
@@ -191,7 +192,7 @@ Your goal:
 
 ## 🧰 Your AI Toolkit
 
-- ChatGPT
+- ChatGPT - Claude - Gemini - ...
 - [Github Copilot](https://education.github.com/pack)
 - Prompt frameworks
 - Agents mindset
