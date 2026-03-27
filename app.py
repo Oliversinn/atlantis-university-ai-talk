@@ -9,7 +9,6 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
-
 from src.f1_ai.ai.handler import QuestionHandler
 from src.f1_ai.config import CURRENT_YEAR, EXAMPLE_QUESTIONS
 from src.f1_ai.data.fetcher import F1DataFetcher
@@ -34,6 +33,7 @@ def get_openai_client() -> OpenAI | None:
 # Race-data question handler (uses all three classes)
 # ---------------------------------------------------------------------------
 
+
 def handle_race_data_question(
     handler: QuestionHandler,
     fetcher: F1DataFetcher,
@@ -56,17 +56,9 @@ def handle_race_data_question(
         fig = charts.plot_lap_times(laps, f"Lap Times – {year} {event} Grand Prix")
         st.plotly_chart(fig, use_container_width=True)
 
-        fastest = (
-            laps.groupby("Driver")["LapTimeSeconds"]
-            .min()
-            .sort_values()
-            .head(10)
-            .reset_index()
-        )
+        fastest = laps.groupby("Driver")["LapTimeSeconds"].min().sort_values().head(10).reset_index()
         fastest.columns = ["Driver", "Fastest Lap (s)"]
-        fastest["Fastest Lap"] = fastest["Fastest Lap (s)"].apply(
-            lambda x: f"{int(x // 60)}:{x % 60:06.3f}"
-        )
+        fastest["Fastest Lap"] = fastest["Fastest Lap (s)"].apply(lambda x: f"{int(x // 60)}:{x % 60:06.3f}")
         st.dataframe(fastest[["Driver", "Fastest Lap"]], use_container_width=True)
 
     # --- season standings ---
@@ -91,6 +83,7 @@ def handle_race_data_question(
 # Main Streamlit app
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     st.set_page_config(
         page_title="F1 AI Assistant 🏎️",
@@ -101,8 +94,7 @@ def main() -> None:
     # --- Header ---
     st.title("🏎️ Formula 1 AI Assistant")
     st.markdown(
-        "Ask me anything about Formula 1 — from championship history and regulations "
-        "to real race data and lap times."
+        "Ask me anything about Formula 1 — from championship history and regulations to real race data and lap times."
     )
 
     # --- Sidebar: example questions ---
@@ -118,10 +110,7 @@ def main() -> None:
     # --- API key gate ---
     openai_client = get_openai_client()
     if openai_client is None:
-        st.warning(
-            "⚠️ **OPENAI_API_KEY** is not set. "
-            "Please provide it to enable AI-powered answers."
-        )
+        st.warning("⚠️ **OPENAI_API_KEY** is not set. Please provide it to enable AI-powered answers.")
         with st.expander("🔧 Setup instructions"):
             st.markdown("**Option 1 – environment variable:**")
             st.code("export OPENAI_API_KEY='sk-...'", language="bash")
@@ -185,10 +174,7 @@ def main() -> None:
                 handle_race_data_question(handler, fetcher, charts, user_question)
             except Exception as exc:
                 st.error(f"Could not fetch race data: {exc}")
-                st.info(
-                    "💡 Tip: Try asking about a specific race, "
-                    "e.g. *'Show me the 2023 Monaco GP results'*"
-                )
+                st.info("💡 Tip: Try asking about a specific race, e.g. *'Show me the 2023 Monaco GP results'*")
 
     # --- Footer ---
     st.divider()

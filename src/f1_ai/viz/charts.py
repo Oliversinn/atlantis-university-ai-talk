@@ -13,12 +13,7 @@ class ChartBuilder:
 
         Limits to the 10 drivers with the lowest median lap time.
         """
-        top_drivers = (
-            laps_df.groupby("Driver")["LapTimeSeconds"]
-            .median()
-            .nsmallest(10)
-            .index.tolist()
-        )
+        top_drivers = laps_df.groupby("Driver")["LapTimeSeconds"].median().nsmallest(10).index.tolist()
         filtered = laps_df[laps_df["Driver"].isin(top_drivers)]
         fig = px.line(
             filtered,

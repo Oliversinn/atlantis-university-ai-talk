@@ -1,10 +1,19 @@
 """QuestionHandler — wraps OpenAI calls for classification and text answers."""
 
 import json
+from typing import Any, TypedDict
 
 from openai import OpenAI
 
 from src.f1_ai.config import CURRENT_YEAR, OPENAI_MODEL
+
+
+class RaceParams(TypedDict):
+    """Structured race parameters extracted from a user question."""
+
+    year: int
+    event: str
+    session_type: str
 
 
 class QuestionHandler:
@@ -12,6 +21,14 @@ class QuestionHandler:
 
     def __init__(self, client: OpenAI) -> None:
         self.client = client
+
+    @staticmethod
+    def _extract_text_content(response: Any) -> str:
+        """Safely extract text content from an OpenAI completion response."""
+        content = response.choices[0].message.content
+        if isinstance(content, str):
+            return content
+        return ""
 
     def classify_question(self, question: str) -> str:
         """Classify a question into: historical, regulations, or race_data.
@@ -39,7 +56,7 @@ class QuestionHandler:
             ],
             max_tokens=20,
         )
-        category = response.choices[0].message.content.strip().lower()
+        category = self._extract_text_content(response).strip().lower()
         if category not in ("historical", "regulations", "race_data"):
             return "historical"
         return category
@@ -62,7 +79,7 @@ class QuestionHandler:
             ],
             max_tokens=600,
         )
-        return response.choices[0].message.content
+        return self._extract_text_content(response)
 
     def answer_regulations_question(self, question: str) -> str:
         """Use OpenAI to answer an F1 regulations question."""
@@ -82,9 +99,9 @@ class QuestionHandler:
             ],
             max_tokens=600,
         )
-        return response.choices[0].message.content
+        return self._extract_text_content(response)
 
-    def extract_race_params(self, question: str) -> dict:
+    def extract_race_params(self, question: str) -> RaceParams:
         """Extract race parameters (year, event, session_type) from a natural-language question.
 
         Returns a dict with keys:
@@ -110,9 +127,16 @@ class QuestionHandler:
             max_tokens=150,
             response_format={"type": "json_object"},
         )
-        params = json.loads(response.choices[0].message.content)
-        # Provide sensible defaults
-        params.setdefault("year", CURRENT_YEAR - 1)
-        params.setdefault("event", "Monaco")
-        params.setdefault("session_type", "R")
-        return params
+        raw_params = json.loads(self._extract_text_content(response))
+        if not isinstance(raw_params, dict):
+            raw_params = {}
+
+        year = raw_params.get("year", CURRENT_YEAR - 1)
+        event = raw_params.get("event", "Monaco")
+        session_type = raw_params.get("session_type", "R")
+
+        return {
+            "year": int(year),
+            "event": str(event),
+            "session_type": str(session_type),
+        }

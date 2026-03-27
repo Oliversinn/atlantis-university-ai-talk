@@ -41,8 +41,37 @@ omit = ["src/f1_ai/__init__.py", "src/f1_ai/viz/__init__.py", "src/f1_ai/data/__
 [tool.coverage.report]
 show_missing = true
 
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+pretty = true
+show_error_codes = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["fastf1.*", "plotly.*", "streamlit", "streamlit.*", "pandas", "pandas.*"]
+ignore_missing_imports = true
+
 [dependency-groups]
 dev = [
     "pytest (>=9.0.2,<10.0.0)",
-    "pytest-cov (>=7.1.0,<8.0.0)"
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "ruff (>=0.4.0,<1.0.0)",
+    "mypy (>=1.10.0,<2.0.0)",
+    "types-requests (>=2.31.0,<3.0.0)",
+    "pandas-stubs (>=3.0.0.260204,<4.0.0.0)"
 ]

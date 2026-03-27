@@ -3,7 +3,6 @@
 import pandas as pd
 import plotly.graph_objects as go
 import pytest
-
 from src.f1_ai.viz.charts import ChartBuilder
 
 
@@ -15,6 +14,7 @@ def builder() -> ChartBuilder:
 # ---------------------------------------------------------------------------
 # plot_lap_times
 # ---------------------------------------------------------------------------
+
 
 class TestPlotLapTimes:
     def test_returns_figure(self, builder: ChartBuilder, sample_laps_df: pd.DataFrame) -> None:
@@ -62,35 +62,26 @@ class TestPlotLapTimes:
 # plot_race_results
 # ---------------------------------------------------------------------------
 
+
 class TestPlotRaceResults:
-    def test_returns_figure(
-        self, builder: ChartBuilder, sample_results_df: pd.DataFrame
-    ) -> None:
+    def test_returns_figure(self, builder: ChartBuilder, sample_results_df: pd.DataFrame) -> None:
         fig = builder.plot_race_results(sample_results_df)
         assert isinstance(fig, go.Figure)
 
-    def test_title_applied(
-        self, builder: ChartBuilder, sample_results_df: pd.DataFrame
-    ) -> None:
+    def test_title_applied(self, builder: ChartBuilder, sample_results_df: pd.DataFrame) -> None:
         title = "British GP Results"
         fig = builder.plot_race_results(sample_results_df, title=title)
         assert fig.layout.title.text == title
 
-    def test_default_title(
-        self, builder: ChartBuilder, sample_results_df: pd.DataFrame
-    ) -> None:
+    def test_default_title(self, builder: ChartBuilder, sample_results_df: pd.DataFrame) -> None:
         fig = builder.plot_race_results(sample_results_df)
         assert fig.layout.title.text == "Race Results"
 
-    def test_has_traces(
-        self, builder: ChartBuilder, sample_results_df: pd.DataFrame
-    ) -> None:
+    def test_has_traces(self, builder: ChartBuilder, sample_results_df: pd.DataFrame) -> None:
         fig = builder.plot_race_results(sample_results_df)
         assert len(fig.data) >= 1
 
-    def test_sorted_ascending_by_points(
-        self, builder: ChartBuilder, sample_results_df: pd.DataFrame
-    ) -> None:
+    def test_sorted_ascending_by_points(self, builder: ChartBuilder, sample_results_df: pd.DataFrame) -> None:
         """The chart must display drivers sorted by ascending Points (horizontal bar)."""
         fig = builder.plot_race_results(sample_results_df)
         # The first trace's y-values should start with the driver with fewest points
@@ -102,22 +93,17 @@ class TestPlotRaceResults:
 # plot_season_standings
 # ---------------------------------------------------------------------------
 
+
 class TestPlotSeasonStandings:
-    def test_returns_figure(
-        self, builder: ChartBuilder, sample_standings_df: pd.DataFrame
-    ) -> None:
+    def test_returns_figure(self, builder: ChartBuilder, sample_standings_df: pd.DataFrame) -> None:
         fig = builder.plot_season_standings(sample_standings_df, 2023)
         assert isinstance(fig, go.Figure)
 
-    def test_title_contains_year(
-        self, builder: ChartBuilder, sample_standings_df: pd.DataFrame
-    ) -> None:
+    def test_title_contains_year(self, builder: ChartBuilder, sample_standings_df: pd.DataFrame) -> None:
         fig = builder.plot_season_standings(sample_standings_df, 2023)
         assert "2023" in fig.layout.title.text
 
-    def test_has_traces(
-        self, builder: ChartBuilder, sample_standings_df: pd.DataFrame
-    ) -> None:
+    def test_has_traces(self, builder: ChartBuilder, sample_standings_df: pd.DataFrame) -> None:
         fig = builder.plot_season_standings(sample_standings_df, 2023)
         assert len(fig.data) >= 1
 
@@ -133,9 +119,5 @@ class TestPlotSeasonStandings:
         df = pd.DataFrame(data)
         fig = builder.plot_season_standings(df, 2023)
         # Collect all x-values across traces; should correspond to ≤10 drivers
-        all_names = [
-            name
-            for trace in fig.data
-            for name in (list(trace.x) if trace.x is not None else [])
-        ]
+        all_names = [name for trace in fig.data for name in (list(trace.x) if trace.x is not None else [])]
         assert len(all_names) <= 10
