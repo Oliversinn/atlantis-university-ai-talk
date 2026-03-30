@@ -45,7 +45,7 @@ format:
 ::: {.columns}
 ::: {.column width="33%"}
 ### 💻 Coding Agent
-- [Github Copilot](https://education.github.com/pack)
+- [GitHub Copilot](https://education.github.com/pack)
 - PR automation
 - Test generation
 :::
