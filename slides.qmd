@@ -193,7 +193,7 @@ Your goal:
 ## 🧰 Your AI Toolkit
 
 - ChatGPT - Claude - Gemini - ...
-- [Github Copilot](https://education.github.com/pack)
+- [GitHub Copilot](https://education.github.com/pack)
 - Prompt frameworks
 - Agents mindset
 
