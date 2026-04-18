@@ -21,12 +21,42 @@ from src.f1_ai.viz.charts import ChartBuilder
 load_dotenv()
 
 
-def get_openai_client() -> OpenAI | None:
-    """Create and return an OpenAI client using the API key from the environment."""
-    api_key = os.getenv("OPENAI_API_KEY")
+def resolve_openai_api_key(env_api_key: str | None, session_api_key: str | None) -> str | None:
+    """Return the first usable OpenAI API key from the environment or session state."""
+    if env_api_key and env_api_key.strip():
+        return env_api_key.strip()
+    if session_api_key and session_api_key.strip():
+        return session_api_key.strip()
+    return None
+
+
+def get_openai_client(api_key: str | None) -> OpenAI | None:
+    """Create and return an OpenAI client when a usable API key is available."""
     if not api_key:
         return None
     return OpenAI(api_key=api_key)
+
+
+def render_openai_key_prompt() -> None:
+    """Show the UI used when the deployment does not provide a shared API key."""
+    st.warning(
+        "⚠️ No OpenAI API key is configured for this deployment. Enter your own key to enable AI-powered answers."
+    )
+    with st.sidebar:
+        st.header("🔑 Bring your own key")
+        st.caption("This public demo does not use a shared OpenAI key.")
+        st.markdown(
+            "Get a key from the [OpenAI API keys page](https://platform.openai.com/api-keys) "
+            "or follow the [OpenAI API quickstart](https://platform.openai.com/docs/quickstart)."
+        )
+        st.text_input(
+            "OpenAI API key",
+            type="password",
+            key="openai_api_key",
+            placeholder="sk-...",
+            help="Stored only in this browser session.",
+        )
+        st.caption("Once you enter a key, the app will unlock for the current session.")
 
 
 # ---------------------------------------------------------------------------
@@ -108,14 +138,19 @@ def main() -> None:
                 st.session_state["auto_submit"] = True
 
     # --- API key gate ---
-    openai_client = get_openai_client()
+    env_api_key = os.getenv("OPENAI_API_KEY")
+    session_api_key = st.session_state.get("openai_api_key")
+    if not isinstance(session_api_key, str):
+        session_api_key = None
+
+    api_key = resolve_openai_api_key(env_api_key, session_api_key)
+    if api_key is None:
+        render_openai_key_prompt()
+        return
+
+    openai_client = get_openai_client(api_key)
     if openai_client is None:
-        st.warning("⚠️ **OPENAI_API_KEY** is not set. Please provide it to enable AI-powered answers.")
-        with st.expander("🔧 Setup instructions"):
-            st.markdown("**Option 1 – environment variable:**")
-            st.code("export OPENAI_API_KEY='sk-...'", language="bash")
-            st.markdown("**Option 2 – `.env` file in the project root:**")
-            st.code("OPENAI_API_KEY=sk-...", language="bash")
+        st.error("Could not initialize the OpenAI client.")
         return
 
     # Instantiate the helpers
