@@ -42,21 +42,20 @@ def render_openai_key_prompt() -> None:
     st.warning(
         "⚠️ No OpenAI API key is configured for this deployment. Enter your own key to enable AI-powered answers."
     )
-    with st.sidebar:
-        st.header("🔑 Bring your own key")
-        st.caption("This public demo does not use a shared OpenAI key.")
-        st.markdown(
-            "Get a key from the [OpenAI API keys page](https://platform.openai.com/api-keys) "
-            "or follow the [OpenAI API quickstart](https://platform.openai.com/docs/quickstart)."
-        )
-        st.text_input(
-            "OpenAI API key",
-            type="password",
-            key="openai_api_key",
-            placeholder="sk-...",
-            help="Stored only in this browser session.",
-        )
-        st.caption("Once you enter a key, the app will unlock for the current session.")
+
+    st.subheader("🔑 Bring your own key")
+    st.markdown(
+        "Get a key from the [OpenAI API keys page](https://platform.openai.com/api-keys) "
+        "or follow the [OpenAI API quickstart](https://platform.openai.com/docs/quickstart)."
+    )
+    st.text_input(
+        "OpenAI API key",
+        type="password",
+        key="openai_api_key",
+        placeholder="sk-...",
+        help="Stored only in this browser session.",
+    )
+    st.info("Once you enter a key and refresh the page, the app will unlock for the current session.")
 
 
 # ---------------------------------------------------------------------------
