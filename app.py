@@ -143,14 +143,19 @@ def main() -> None:
         session_api_key = None
 
     api_key = resolve_openai_api_key(env_api_key, session_api_key)
-    if api_key is None:
+
+    # If no env key, always show the input field for user-provided keys
+    if not env_api_key:
         render_openai_key_prompt()
-        return
+
+    # If still no key available, disable the main app
+    if api_key is None:
+        st.stop()
 
     openai_client = get_openai_client(api_key)
     if openai_client is None:
         st.error("Could not initialize the OpenAI client.")
-        return
+        st.stop()
 
     # Instantiate the helpers
     handler = QuestionHandler(openai_client)
