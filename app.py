@@ -37,13 +37,9 @@ def get_openai_client(api_key: str | None) -> OpenAI | None:
     return OpenAI(api_key=api_key)
 
 
-def render_openai_key_prompt() -> None:
-    """Show the UI used when the deployment does not provide a shared API key."""
-    st.warning(
-        "⚠️ No OpenAI API key is configured for this deployment. Enter your own key to enable AI-powered answers."
-    )
-
-    st.subheader("🔑 Bring your own key")
+def render_openai_key_sidebar() -> None:
+    """Show the API key input field in the sidebar."""
+    st.header("🔑 Your OpenAI Key")
     st.markdown(
         "Get a key from the [OpenAI API keys page](https://platform.openai.com/api-keys) "
         "or follow the [OpenAI API quickstart](https://platform.openai.com/docs/quickstart)."
@@ -55,7 +51,7 @@ def render_openai_key_prompt() -> None:
         placeholder="sk-...",
         help="Stored only in this browser session.",
     )
-    st.info("Once you enter a key and refresh the page, the app will unlock for the current session.")
+    st.divider()
 
 
 # ---------------------------------------------------------------------------
@@ -126,8 +122,12 @@ def main() -> None:
         "Ask me anything about Formula 1 — from championship history and regulations to real race data and lap times."
     )
 
-    # --- Sidebar: example questions ---
+    # --- Sidebar: API key (if needed) and example questions ---
     with st.sidebar:
+        env_api_key = os.getenv("OPENAI_API_KEY")
+        if not env_api_key:
+            render_openai_key_sidebar()
+
         st.header("💡 Example Questions")
         st.caption("Click any question to load it instantly:")
         st.divider()
@@ -144,9 +144,11 @@ def main() -> None:
 
     api_key = resolve_openai_api_key(env_api_key, session_api_key)
 
-    # If no env key, always show the input field for user-provided keys
+    # If no env key, show warning in main area and stop if no key available
     if not env_api_key:
-        render_openai_key_prompt()
+        st.warning(
+            "⚠️ No OpenAI API key configured. Enter your key in the **🔑 Your OpenAI Key** section on the left sidebar."
+        )
 
     # If still no key available, disable the main app
     if api_key is None:
