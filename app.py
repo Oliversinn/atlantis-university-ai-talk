@@ -53,7 +53,7 @@ def render_openai_key_sidebar() -> None:
     )
     if st.button("✅ Confirm Key", use_container_width=True, key="confirm_key_btn"):
         if st.session_state.get("openai_api_key"):
-            st.success("Key saved!", icon="✓")
+            st.success("Key saved!", icon="✅")
         else:
             st.error("Please enter an API key first.")
     st.divider()
