@@ -149,8 +149,8 @@ def main() -> None:
 
     api_key = resolve_openai_api_key(env_api_key, session_api_key)
 
-    # If no env key, show warning in main area and stop if no key available
-    if not env_api_key:
+    # If no usable key exists, show a warning in the main area.
+    if api_key is None:
         st.warning(
             "⚠️ No OpenAI API key configured. Enter your key in the **🔑 Your OpenAI Key** section on the left sidebar."
         )
