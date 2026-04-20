@@ -1,6 +1,7 @@
 """QuestionHandler — wraps OpenAI calls for classification and text answers."""
 
 import json
+import re
 from typing import Any, TypedDict
 
 from openai import OpenAI
@@ -29,6 +30,37 @@ class QuestionHandler:
         if isinstance(content, str):
             return content
         return ""
+
+    @staticmethod
+    def _extract_year_from_question(question: str) -> int | None:
+        """Return an explicitly mentioned year (e.g. 2023) if present."""
+        match = re.search(r"\b(19\d{2}|20\d{2})\b", question)
+        if not match:
+            return None
+        return int(match.group(1))
+
+    @staticmethod
+    def _question_requests_latest_event(question: str) -> bool:
+        """Return True when the question asks for the latest/most recent race."""
+        question_lower = question.lower()
+        keywords = ("latest", "most recent", "last race", "newest")
+        return any(keyword in question_lower for keyword in keywords)
+
+    @staticmethod
+    def _infer_session_type_from_question(question: str) -> str | None:
+        """Infer a FastF1 session code from common natural language terms."""
+        question_lower = question.lower()
+        if "qualifying" in question_lower or re.search(r"\bq\b", question_lower):
+            return "Q"
+        if "fp1" in question_lower or "practice 1" in question_lower or "free practice 1" in question_lower:
+            return "FP1"
+        if "fp2" in question_lower or "practice 2" in question_lower or "free practice 2" in question_lower:
+            return "FP2"
+        if "fp3" in question_lower or "practice 3" in question_lower or "free practice 3" in question_lower:
+            return "FP3"
+        if "race" in question_lower or "results" in question_lower or "lap" in question_lower:
+            return "R"
+        return None
 
     def classify_question(self, question: str) -> str:
         """Classify a question into: historical, regulations, or race_data.
@@ -131,12 +163,26 @@ class QuestionHandler:
         if not isinstance(raw_params, dict):
             raw_params = {}
 
+        explicit_year = self._extract_year_from_question(question)
+        latest_requested = self._question_requests_latest_event(question)
+        inferred_session_type = self._infer_session_type_from_question(question)
+
         year = raw_params.get("year", CURRENT_YEAR - 1)
+        if explicit_year is not None:
+            year = explicit_year
+        elif latest_requested and "year" not in raw_params:
+            year = CURRENT_YEAR
+
         event = raw_params.get("event", "Monaco")
+        if latest_requested:
+            event = "latest"
+
         session_type = raw_params.get("session_type", "R")
+        if inferred_session_type is not None:
+            session_type = inferred_session_type
 
         return {
             "year": int(year),
             "event": str(event),
-            "session_type": str(session_type),
+            "session_type": str(session_type).upper(),
         }

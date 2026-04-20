@@ -1,6 +1,7 @@
 """F1DataFetcher — wraps all FastF1 and Ergast API calls."""
 
 import os
+from datetime import UTC, datetime
 from typing import Any, cast
 
 import fastf1
@@ -16,6 +17,22 @@ fastf1.Cache.enable_cache(CACHE_DIR)
 
 class F1DataFetcher:
     """Fetches Formula 1 data from FastF1 and the Ergast API."""
+
+    def get_latest_completed_event(self, year: int) -> str:
+        """Return the latest completed event name for a season."""
+        schedule = fastf1.get_event_schedule(year, include_testing=False)
+        now_utc = datetime.now(tz=UTC)
+
+        event_dates = pd.to_datetime(schedule["EventDate"], utc=True, errors="coerce")
+        completed = schedule[event_dates <= now_utc]
+
+        if not completed.empty:
+            latest_row = cast(pd.Series, completed.sort_values("RoundNumber").iloc[-1])
+            return str(latest_row["EventName"])
+
+        previous_year_schedule = fastf1.get_event_schedule(year - 1, include_testing=False)
+        latest_previous = cast(pd.Series, previous_year_schedule.sort_values("RoundNumber").iloc[-1])
+        return str(latest_previous["EventName"])
 
     def get_lap_times(self, year: int, event: str, session_type: str = "R") -> pd.DataFrame:
         """Fetch lap times for a session using FastF1.

@@ -37,6 +37,18 @@ def get_openai_client(api_key: str | None) -> OpenAI | None:
     return OpenAI(api_key=api_key)
 
 
+def format_session_type(session_type: str) -> str:
+    """Convert an F1 session code into a readable label for the UI."""
+    labels = {
+        "R": "Race",
+        "Q": "Qualifying",
+        "FP1": "FP1",
+        "FP2": "FP2",
+        "FP3": "FP3",
+    }
+    return labels.get(session_type.upper(), session_type)
+
+
 def render_openai_key_sidebar() -> None:
     """Show the API key input field in the sidebar."""
     st.header("🔑 Your OpenAI Key")
@@ -76,7 +88,12 @@ def handle_race_data_question(
     event = params.get("event", "Monaco")
     session_type = params.get("session_type", "R")
 
-    st.info(f"📊 Fetching data for the **{year} {event} Grand Prix** (session: {session_type})…")
+    if event.lower() == "latest":
+        event = fetcher.get_latest_completed_event(year)
+
+    session_label = format_session_type(session_type)
+
+    st.info(f"📊 Fetching data for the **{year} {event} Grand Prix** (session: {session_label})…")
 
     question_lower = question.lower()
 
@@ -92,11 +109,26 @@ def handle_race_data_question(
         st.dataframe(fastest[["Driver", "Fastest Lap"]], use_container_width=True)
 
     # --- season standings ---
-    elif any(w in question_lower for w in ("standing", "championship", "season points")):
+    elif any(
+        w in question_lower
+        for w in (
+            "standing",
+            "championship",
+            "season points",
+            "most races",
+            "most wins",
+            "won the most races",
+        )
+    ):
         standings = fetcher.get_season_standings(year)
         if standings.empty:
             st.warning(f"No standings data found for {year}.")
         else:
+            if any(w in question_lower for w in ("most races", "most wins", "won the most races")):
+                leader = standings.sort_values("Wins", ascending=False).iloc[0]
+                st.success(
+                    f"🏁 **{leader['Driver']}** won the most races in {year} with **{int(leader['Wins'])} wins**."
+                )
             fig = charts.plot_season_standings(standings, year)
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(standings, use_container_width=True)

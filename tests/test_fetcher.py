@@ -190,3 +190,48 @@ class TestGetSeasonStandings:
         with patch("src.f1_ai.data.fetcher.requests.get", return_value=mock_resp):
             with pytest.raises(req_lib.HTTPError):
                 fetcher.get_season_standings(9999)
+
+
+# ---------------------------------------------------------------------------
+# get_latest_completed_event
+# ---------------------------------------------------------------------------
+
+
+class TestGetLatestCompletedEvent:
+    def test_returns_latest_completed_event_for_year(self, fetcher: F1DataFetcher) -> None:
+        schedule = pd.DataFrame(
+            {
+                "RoundNumber": [1, 2],
+                "EventName": ["Bahrain Grand Prix", "Saudi Arabian Grand Prix"],
+                "EventDate": ["2026-03-10", "2026-03-20"],
+            }
+        )
+
+        with patch("src.f1_ai.data.fetcher.fastf1.get_event_schedule", return_value=schedule):
+            result = fetcher.get_latest_completed_event(2026)
+
+        assert result == "Saudi Arabian Grand Prix"
+
+    def test_falls_back_to_previous_year_when_no_completed_event(self, fetcher: F1DataFetcher) -> None:
+        current_year_schedule = pd.DataFrame(
+            {
+                "RoundNumber": [1],
+                "EventName": ["Australian Grand Prix"],
+                "EventDate": ["2099-03-20"],
+            }
+        )
+        previous_year_schedule = pd.DataFrame(
+            {
+                "RoundNumber": [23, 24],
+                "EventName": ["Qatar Grand Prix", "Abu Dhabi Grand Prix"],
+                "EventDate": ["2025-12-01", "2025-12-08"],
+            }
+        )
+
+        with patch(
+            "src.f1_ai.data.fetcher.fastf1.get_event_schedule",
+            side_effect=[current_year_schedule, previous_year_schedule],
+        ):
+            result = fetcher.get_latest_completed_event(2099)
+
+        assert result == "Abu Dhabi Grand Prix"

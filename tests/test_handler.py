@@ -141,3 +141,33 @@ class TestExtractRaceParams:
         handler = QuestionHandler(client)
         handler.extract_race_params("something")
         client.chat.completions.create.assert_called_once()
+
+    def test_explicit_year_in_question_overrides_model_year(self) -> None:
+        payload = json.dumps({"year": 2022, "event": "Monaco", "session_type": "R"})
+        client = _make_openai_client(payload)
+        handler = QuestionHandler(client)
+
+        params = handler.extract_race_params("Who won the most races in 2023?")
+
+        assert params["year"] == 2023
+
+    def test_latest_question_sets_latest_event_and_current_year(self) -> None:
+        from src.f1_ai.config import CURRENT_YEAR
+
+        payload = json.dumps({"event": "Monaco", "session_type": "R"})
+        client = _make_openai_client(payload)
+        handler = QuestionHandler(client)
+
+        params = handler.extract_race_params("Give me the latest race lap times")
+
+        assert params["year"] == CURRENT_YEAR
+        assert params["event"] == "latest"
+
+    def test_qualifying_keyword_forces_q_session_type(self) -> None:
+        payload = json.dumps({"year": 2023, "event": "Monaco", "session_type": "R"})
+        client = _make_openai_client(payload)
+        handler = QuestionHandler(client)
+
+        params = handler.extract_race_params("Show me qualifying lap times for Monaco 2023")
+
+        assert params["session_type"] == "Q"
